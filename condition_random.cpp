@@ -39,7 +39,7 @@ leveldb::DB *db;
 leveldb::Options ops;
 leveldb::Status status;
 FILE *fp;
-static timeval begin_time;
+static timeval ycsb_begin_time;
 long long sum_time;
 unsigned long error_count;
 unsigned long read_count;
@@ -142,7 +142,7 @@ void process(kvBuffer *kvb){
   struct timeval end_time;
   //  struct timeval now_time;
   long long diff;
-  long long old_time;
+
   for(kviter = 0 ; kviter < kvb->length ; kviter++){
     kvp = &kvb->kvs[kviter];
     // gettimeofday(&now_time,NULL);
@@ -175,14 +175,9 @@ void process(kvBuffer *kvb){
     }      
     gettimeofday(&end_time,NULL);
     compute_diff(end_time,start_time,diff);
-    old_time = sum_time;
+    
     sum_time = sum_time + diff;
-    if(sum_time < old_time){
-      cout<<"record_count:"<<record_count<<endl;
-      cout<<"before overflow:"<<(old_time*1.0/100)/(record_count)<<"ms/op"<<endl;
-      cout<<"overflow"<<endl;
-      sum_time = 0;
-    }
+   
   }
   
 }
@@ -222,11 +217,12 @@ void consume(){
 
   kvBuffer* kvb = NULL;
   std::unique_lock<std::mutex> lk(mut1);
+  struct timeval ycsb_end_time;
   data_cond1.wait(lk,[]{return !consume_list.empty();});
   kvb = consume_list.front();
   consume_list.pop_front();
   lk.unlock();
-  gettimeofday(&begin_time,NULL);
+  long long diff;
   process(kvb);
   
   std::unique_lock<std::mutex> lk2(mut2);
@@ -248,6 +244,9 @@ void consume(){
       /*    for (it->SeekToFirst(),i=0; it->Valid() && i < 5; it->Next(),i++) {
 	    cout << it->key().ToString() << ": "  << it->value().ToString() << endl;
 	    }*/
+      gettimeofday(&ycsb_end_time,NULL);
+      compute_diff(ycsb_end_time,ycsb_begin_time,diff);
+      std::cout<<"ycsb iops:"<<(diff*1.0/100)/(record_count)<<"ms/op"<<endl;
       exit(0);
     }
     data_cond1.wait(lk1,[]{return !consume_list.empty();});
@@ -301,10 +300,12 @@ int main(int argc,char *argv[]){
   if(argc == 3){
     init(argv[1],NULL,argv[2]);
   }else{
+    //filename,dbfilename,load_str
     init(argv[1],argv[2],argv[3]);
   }
   thread one(produce);
   thread two(consume);
+  gettimeofday(&ycsb_begin_time,NULL);
   one.join();
   two.join();
   while(true)
