@@ -10,12 +10,14 @@
 #include<assert.h>
 #include<list>
 #include<sys/time.h>
+#include<time.h>
 #include<unistd.h>
 #include"buildRandomValue.h"
 #include"slice.h"
 using namespace std;
-#define KVBUFFER_LENGTH 100
+#define KVBUFFER_LENGTH 6
 #define LIST_LENGTH 5
+
 using std::mutex;
 using std::cout;
 using std::endl;
@@ -32,6 +34,7 @@ typedef struct kvBuffer{
 }kvBuffer;
 
 list<kvBuffer *> consume_list,recycle_list;
+kvBuffer checkBuffer;
 std::mutex mut1,mut2;
 std::condition_variable data_cond1,data_cond2;
 bool more_data_to_produce;
@@ -47,63 +50,40 @@ unsigned long record_count;
 unsigned long key_count;
 bool LOAD_FLAG = true;
 RandomGenerator rdgen;
-void make_data(kvBuffer *kvb,bool& flag){
 
-  char ch;
-  char number[10];
+
+unsigned long long read_latency_sum;
+unsigned long long write_latency_sum;
+void make_data(kvBuffer *kvb,FILE *trace_file,bool &eof_flag){
+
+
+  //  char number[10];
+  char line[200];
   //  int readcount = 0;
   int length;
   int kviter = 0;
-  int i ;
+  //  int i ;
+  char* pos;
   kv_pair* kvp = NULL;
-  
-  while((ch = fgetc(fp))!=EOF && kviter < KVBUFFER_LENGTH){
-    kvp = &kvb->kvs[kviter];    
+  while(kviter < KVBUFFER_LENGTH && fscanf(trace_file,"%s",line) > 0 ){
+    kvp = &kvb->kvs[kviter];
+    kviter++;
     kvp->key.clear();
     kvp->value.clear();
 
-    while(!(ch >= '0' && ch <='9')){
-      ch = fgetc(fp);
-      if(ch == EOF)
-	break;
-    }
-    if(ch == EOF){
-      flag = false;
-      break;
-    }
-
-    kviter++;
-
-    for(i = 0 ;ch >= '0' && ch <= '9' ; ch = fgetc(fp),i++){
-      number[i] = ch;
-    }
-    number[i] = '\0';
-    length = atoi(number);
-
-    ch = fgetc(fp);
-    for(i = 0 ;ch >= '0' && ch <= '9' ; ch = fgetc(fp),i++){
-      number[i] = ch;
-    }
-    number[i] = '\0';
-    kvp->timestamp = atoll(number);
-
-    kvp->operation = ch;
-    if(ch == 'R'){
-      read_count++;
-      for(i = 0 ; i < 3 ; i++){
-	fgetc(fp);
-      }
-    }
-    else{
-      for(i = 0 ; i < 4 ; i++){
-	fgetc(fp);
-      }
-    }
-
-    ch = fgetc(fp);
-    for(i = 0 ; ch != '\n' ; ch = fgetc(fp),i++){
-	(kvp->key).append(1,ch);
-    }
+    //value length
+    length=atoi(line);
+    pos = strchr(line,',');
+    pos++;
+    //operation
+    kvp->operation = *pos;
+    pos = strchr(pos,',');
+    pos++;
+    //key
+    kvp->key.append(pos);
+    //kvp->key.resize(kvp->key.size() - 1);
+   
+    //value
     if(LOAD_FLAG){
       if(kvp->operation == 'R'){
 	kvp->value.append(rdgen.Generate(length).data(),length);
@@ -114,17 +94,34 @@ void make_data(kvBuffer *kvb,bool& flag){
 	kviter--;
       }
     }else{
-      (kvp->value).append(rdgen.Generate(length).data(),length);
-      if(kvp->value.size() != length){
-	cout<<"copy error"<<endl;
+      if(length > 0){
+	(kvp->value).append(rdgen.Generate(length).data(),length);
+	if(kvp->value.size() != length){
+	  cout<<"copy error"<<endl;
+	}
+	if(checkBuffer.length < 6 && rand()%2 == 0){
+	  cout<<"kvp->key:"<<kvp->key<<endl;
+	  cout<<"kvp->value:"<<kvp->value<<endl;
+	  checkBuffer.length++;
+	}
       }
     }
 
+ /* cout<<"key:"<<kvp->key<<" ";
+  cout<<"operation:"<<kvp->operation;
+  cout<<"length:"<<length<<endl;*/
+
+
   }
-  if(ch == EOF){
-    flag = false;
+
+  if(ferror(fp)){
+    perror("read trace file error");
+  }
+  if(feof(fp)){
+    eof_flag = true;
   }
   kvb->length = kviter;
+
 }
 
 void compute_diff(struct timeval &t1,struct timeval &t2,long long &diff)
@@ -145,14 +142,6 @@ void process(kvBuffer *kvb){
 
   for(kviter = 0 ; kviter < kvb->length ; kviter++){
     kvp = &kvb->kvs[kviter];
-    // gettimeofday(&now_time,NULL);
-    // compute_diff(now_time,begin_time,diff);
-    // while(kvp->timestamp > diff){
-    //   //        usleep(kvp->timestamp - diff);
-    // 	gettimeofday(&now_time,NULL);
-    // 	compute_diff(now_time,begin_time,diff);
-    // }
-    // usleep(50000);
     record_count++;
     gettimeofday(&start_time,NULL);
     if(kvp->operation == 'R'){
@@ -161,8 +150,11 @@ void process(kvBuffer *kvb){
       }
       else{
 	status = db->Get(leveldb::ReadOptions(),kvp->key, &value);
+	read_count++;
       }
       if(!status.ok()){
+	cerr<<"key:"<<kvp->key<<" ";
+	cerr<<status.ToString()<<endl;
 	error_count++;
       }
     }else{
@@ -177,7 +169,11 @@ void process(kvBuffer *kvb){
     compute_diff(end_time,start_time,diff);
     
     sum_time = sum_time + diff;
-   
+    if(kvp->operation == 'R'){
+      read_latency_sum += diff;
+    }else{
+      write_latency_sum += diff;
+    }
   }
   
 }
@@ -189,12 +185,17 @@ void init(char filename[],char dbfilename[],char load_str[]){
   read_count=0;
   record_count=0;
   key_count=0;
+  read_latency_sum = 0;
+  write_latency_sum = 0;
+  
+  checkBuffer.length = 0;
+   srand( (unsigned)time( NULL ) ); 
   if( fp == NULL ){
     printf("error\n");
   }
   ops.create_if_missing = true;
   ops.compression = leveldb::kNoCompression;   
-  if(load_str[0] == 'l'){
+  if(load_str[0] == 'l' || load_str[0] == 'L'){
     LOAD_FLAG = true;
   }else{
     LOAD_FLAG = false;
@@ -239,6 +240,8 @@ void consume(){
       std::cout<<"record_count:"<<record_count<<std::endl;
       std::cout<<record_count*1.0/(sum_time*1.0/1000000)<<"op/s"<<endl;
       std::cout<<(sum_time*1.0/100)/(record_count)<<"ms/op"<<endl;
+      std::cout<<"read_average_latency:"<<read_latency_sum*1.0/read_count<<"micros"<<endl;
+      std::cout<<"write_average_latency:"<<write_latency_sum*1.0/(record_count - read_count)<<"micros"<<endl;
       //  int i;
       // leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
       /*    for (it->SeekToFirst(),i=0; it->Valid() && i < 5; it->Next(),i++) {
@@ -247,7 +250,11 @@ void consume(){
       gettimeofday(&ycsb_end_time,NULL);
       compute_diff(ycsb_end_time,ycsb_begin_time,diff);
       std::cout<<"ycsb iops:"<<(diff*1.0/100)/(record_count)<<"ms/op"<<endl;
-      exit(0);
+      std::string stat_str;
+      db->GetProperty("leveldb.stats",&stat_str);
+      std::cout<<stat_str<<std::endl;
+      delete db;
+      exit(0);      
     }
     data_cond1.wait(lk1,[]{return !consume_list.empty();});
     kvb = consume_list.front();
@@ -266,7 +273,7 @@ void consume(){
 void produce(){
 
   kvBuffer* kvb = NULL;
-  bool flag = true;
+  bool eof_flag = false;
   while(true){
     std::unique_lock<std::mutex> lk2(mut2);
     data_cond2.wait(lk2,[]{return !recycle_list.empty();});
@@ -276,21 +283,19 @@ void produce(){
       cout<<"waiting for recycle list"<<endl;
       }*/
     lk2.unlock();
-    make_data(kvb,flag);
-    if(!flag){
-      more_data_to_produce = false;  //no more data to produce
-      cout<<"load data end!"<<endl;
-    }
-    if(kvb->length == 0){
-      cout<<"produce end"<<endl;
-      return  ;
-    }
-
+    make_data(kvb,fp,eof_flag);
+    
     std::unique_lock<std::mutex> lk1(mut1);
     consume_list.push_back(kvb);
     lk1.unlock();
     data_cond1.notify_one();
-
+    
+    if(eof_flag){
+      more_data_to_produce = false;  //no more data to produce
+      cout<<"load data end!"<<endl;
+      return ;
+    }
+    
   }
   cout<<"I'm living"<<endl;
 }
