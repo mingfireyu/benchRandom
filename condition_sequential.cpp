@@ -210,17 +210,3 @@ void produce(){
 }
 
 
-int main(int argc,char *argv[]){
-  if(argc == 2){
-    init(argv[1]);
-  }else{
-    init(NULL);
-  }
-  thread one(produce);
-  thread two(consume);
-  one.join();
-  two.join();
-  while(true)
-    sleep(1);
-  return 0;
-}
