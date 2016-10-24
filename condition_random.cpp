@@ -301,19 +301,19 @@ void produce(){
 }
 
 
-int main(int argc,char *argv[]){
-  if(argc == 3){
-    init(argv[1],NULL,argv[2]);
-  }else{
-    //filename,dbfilename,load_str
-    init(argv[1],argv[2],argv[3]);
-  }
-  thread one(produce);
-  thread two(consume);
-  gettimeofday(&ycsb_begin_time,NULL);
-  one.join();
-  two.join();
-  while(true)
-    sleep(1);
-  return 0;
-}
+// int main(int argc,char *argv[]){
+//   if(argc == 3){
+//     init(argv[1],NULL,argv[2]);
+//   }else{
+//     //filename,dbfilename,load_str
+//     init(argv[1],argv[2],argv[3]);
+//   }
+//   thread one(produce);
+//   thread two(consume);
+//   gettimeofday(&ycsb_begin_time,NULL);
+//   one.join();
+//   two.join();
+//   while(true)
+//     sleep(1);
+//   return 0;
+// }

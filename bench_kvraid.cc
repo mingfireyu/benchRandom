@@ -23,7 +23,7 @@ using namespace std;
 #define LIST_LENGTH 5
 #define KEYSIZE 24
 #define VALUESIZE 65536
-#define DISK_SIZE   ((unsigned long long )1024 * 1024 * 1024 * 4) // 1GB
+#define DISK_SIZE   ((unsigned long long )1024 * 1024 * 1024 * 20) // 20GB
 using std::mutex;
 using std::cout;
 using std::endl;
@@ -101,15 +101,15 @@ void make_data(kvBuffer *kvb,FILE *trace_file,bool &eof_flag){
       if(length > 0){// read hava no values
 	strncpy(kvp->value,rdgen.Generate(length).data(),length);
 	kvp->valueLength = length;
-	// if(checkBuffer.length < 6){
-	//   strncpy(checkBuffer.kvs[checkBuffer.length].key,kvp->key,KEYSIZE);
-	//   strncpy(checkBuffer.kvs[checkBuffer.length].value,kvp->value,length);
-	//   checkBuffer.kvs[checkBuffer.length].keyLength = KEYSIZE;
-	//   checkBuffer.kvs[checkBuffer.length].valueLength = length;
-	//   checkBuffer.length++;
-	//   cout<<kvp->key<<endl;
-	//   cout<<kvp->value<<endl;
-	// }
+	/*if(checkBuffer.length < 6){
+	  strncpy(checkBuffer.kvs[checkBuffer.length].key,kvp->key,KEYSIZE);
+	  strncpy(checkBuffer.kvs[checkBuffer.length].value,kvp->value,length);
+	  checkBuffer.kvs[checkBuffer.length].keyLength = KEYSIZE;
+	  checkBuffer.kvs[checkBuffer.length].valueLength = length;
+	  checkBuffer.length++;
+	  cout<<kvp->key<<endl;
+	  cout<<kvp->value<<endl;
+	}*/
       }
       
     }
@@ -251,19 +251,22 @@ void consume(){
       // db->GetProperty("leveldb.stats",&stat_str);
       // std::cout<<stat_str<<std::endl;
       // delete db;
-         // len_t valueSize;
-	 // bool resFlag = false; 
-         // char *readValue=NULL;
+     /*  len_t valueSize;
+	 bool resFlag = false; 
+         char *readValue=NULL;
 
-      // for(int i = 0 ; i < 6 ; i++){
-      // 	cout<<checkBuffer.kvs[i].key<<endl;
-      // 	resFlag = kvserver->getValue(checkBuffer.kvs[i].key,checkBuffer.kvs[i].keyLength,readValue,valueSize);
-      // 	if(!resFlag){
-      // 	  cout<<"not found"<<endl;
-      // 	}else{
-      // 	  cout<<readValue<<endl;
-      // 	}
-      // }
+     for(int i = 0 ; i < 6 ; i++){
+      	cout<<checkBuffer.kvs[i].key<<endl;
+      	resFlag = kvserver->getValue(checkBuffer.kvs[i].key,checkBuffer.kvs[i].keyLength,readValue,valueSize);
+      	if(!resFlag){
+      	  cout<<"not found"<<endl;
+      	}else{
+	  if(strncmp(readValue,checkBuffer.kvs[i].value,valueSize) == 0){
+	    cout<<"correct"<<endl;
+	  }
+      	  cout<<readValue<<endl;
+      	}
+      }*/
       exit(0);      
     }
     data_cond1.wait(lk1,[]{return !consume_list.empty();});
