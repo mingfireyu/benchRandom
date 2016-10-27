@@ -17,7 +17,7 @@
 using namespace std;
 #define KVBUFFER_LENGTH 6
 #define LIST_LENGTH 5
-
+#define KEYLENGTH 24
 using std::mutex;
 using std::cout;
 using std::endl;
@@ -81,6 +81,7 @@ void make_data(kvBuffer *kvb,FILE *trace_file,bool &eof_flag){
     pos++;
     //key
     kvp->key.append(pos);
+    kvp->key.resize(KEYLENGTH);
     //kvp->key.resize(kvp->key.size() - 1);
    
     //value
