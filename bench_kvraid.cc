@@ -21,9 +21,9 @@
 using namespace std;
 #define KVBUFFER_LENGTH 6
 #define LIST_LENGTH 5
-#define KEYSIZE 16
+#define KEYSIZE 24
 #define VALUESIZE 65536
-#define DISK_SIZE   ((unsigned long long )1024 * 1024 * 1024 * 4) // 1GB
+#define DISK_SIZE   ((unsigned long long )1024 * 1024 * 1024 * 20) // 20GB
 using std::mutex;
 using std::cout;
 using std::endl;
@@ -40,14 +40,14 @@ typedef struct kvBuffer{
   int length;
   kv_pair kvs[KVBUFFER_LENGTH];
 }kvBuffer;
-
+kvBuffer checkBuffer;
 list<kvBuffer *> consume_list,recycle_list;
 std::mutex mut1,mut2;
 std::condition_variable data_cond1,data_cond2;
 bool more_data_to_produce;
-leveldb::DB *db;
-leveldb::Options ops;
-leveldb::Status status;
+// leveldb::DB *db;
+// leveldb::Options ops;
+// leveldb::Status status;
 FILE *fp;
 static timeval ycsb_begin_time;
 long long sum_time;
@@ -101,7 +101,17 @@ void make_data(kvBuffer *kvb,FILE *trace_file,bool &eof_flag){
       if(length > 0){// read hava no values
 	strncpy(kvp->value,rdgen.Generate(length).data(),length);
 	kvp->valueLength = length;
+	/*if(checkBuffer.length < 6){
+	  strncpy(checkBuffer.kvs[checkBuffer.length].key,kvp->key,KEYSIZE);
+	  strncpy(checkBuffer.kvs[checkBuffer.length].value,kvp->value,length);
+	  checkBuffer.kvs[checkBuffer.length].keyLength = KEYSIZE;
+	  checkBuffer.kvs[checkBuffer.length].valueLength = length;
+	  checkBuffer.length++;
+	  cout<<kvp->key<<endl;
+	  cout<<kvp->value<<endl;
+	}*/
       }
+      
     }
 
  /* cout<<"key:"<<kvp->key<<" ";
@@ -181,6 +191,7 @@ void init(char filename[],char *diskPaths[],int numDisks){
   key_count=0;
   read_latency_sum = 0;
   write_latency_sum = 0;
+  checkBuffer.length = 0;
   if( fp == NULL ){
     printf("error\n");
   }
@@ -212,7 +223,6 @@ void consume(){
   lk.unlock();
   long long diff;
   process(kvb);
-  
   std::unique_lock<std::mutex> lk2(mut2);
   recycle_list.push_back(kvb);
   lk2.unlock();
@@ -237,10 +247,26 @@ void consume(){
       gettimeofday(&ycsb_end_time,NULL);
       compute_diff(ycsb_end_time,ycsb_begin_time,diff);
       std::cout<<"ycsb iops:"<<(diff*1.0/100)/(record_count)<<"ms/op"<<endl;
-      std::string stat_str;
-      db->GetProperty("leveldb.stats",&stat_str);
-      std::cout<<stat_str<<std::endl;
-      delete db;
+      // std::string stat_str;
+      // db->GetProperty("leveldb.stats",&stat_str);
+      // std::cout<<stat_str<<std::endl;
+      // delete db;
+     /*  len_t valueSize;
+	 bool resFlag = false; 
+         char *readValue=NULL;
+
+     for(int i = 0 ; i < 6 ; i++){
+      	cout<<checkBuffer.kvs[i].key<<endl;
+      	resFlag = kvserver->getValue(checkBuffer.kvs[i].key,checkBuffer.kvs[i].keyLength,readValue,valueSize);
+      	if(!resFlag){
+      	  cout<<"not found"<<endl;
+      	}else{
+	  if(strncmp(readValue,checkBuffer.kvs[i].value,valueSize) == 0){
+	    cout<<"correct"<<endl;
+	  }
+      	  cout<<readValue<<endl;
+      	}
+      }*/
       exit(0);      
     }
     data_cond1.wait(lk1,[]{return !consume_list.empty();});
@@ -288,15 +314,15 @@ void produce(){
 }
 
 
-// int main(int argc,char *argv[]){
+int main(int argc,char *argv[]){
   
-//   init(argv[1],argv+2,atoi(argv[argc-1]));
-//   thread one(produce);
-//   thread two(consume);
-//   gettimeofday(&ycsb_begin_time,NULL);
-//   one.join();
-//   two.join();
-//   while(true)
-//     sleep(1);
-//   return 0;
-// }
+  init(argv[1],argv+2,atoi(argv[argc-1]));
+  thread one(produce);
+  thread two(consume);
+  gettimeofday(&ycsb_begin_time,NULL);
+  one.join();
+  two.join();
+  while(true)
+    sleep(1);
+  return 0;
+}

@@ -7,4 +7,4 @@ filename_run="$WORKLOAD"_run_"$FIELDLENGTH"bytes_"$RECORDCOUNT".trace
 
 dbname=/home/ming/storage/adb
 ./a.out "$filename_load" "$dbname" run
-./a.out "$filename_run" "$dbname" run
+#./a.out "$filename_run" "$dbname" run
