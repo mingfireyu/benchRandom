@@ -14,6 +14,7 @@
 #include<unistd.h>
 #include"buildRandomValue.h"
 #include"slice.h"
+#include <leveldb/filter_policy.h>
 using namespace std;
 #define KVBUFFER_LENGTH 100
 #define LIST_LENGTH 5
@@ -199,7 +200,8 @@ void init(char filename[],char dbfilename[],char load_str[]){
     printf("error\n");
   }
   ops.create_if_missing = true;
-  ops.compression = leveldb::kNoCompression;   
+  ops.filter_policy = leveldb::NewBloomFilterPolicy(10);
+  //  ops.compression = leveldb::kNoCompression;   
   if(load_str[0] == 'l' || load_str[0] == 'L'){
     LOAD_FLAG = true;
   }else{
