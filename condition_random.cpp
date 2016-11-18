@@ -15,7 +15,7 @@
 #include"buildRandomValue.h"
 #include"slice.h"
 using namespace std;
-#define KVBUFFER_LENGTH 6
+#define KVBUFFER_LENGTH 100
 #define LIST_LENGTH 5
 #define KEYLENGTH 24
 using std::mutex;
@@ -100,11 +100,11 @@ void make_data(kvBuffer *kvb,FILE *trace_file,bool &eof_flag){
 	if(kvp->value.size() != length){
 	  cout<<"copy error"<<endl;
 	}
-	if(checkBuffer.length < 6 && rand()%2 == 0){
-	  cout<<"kvp->key:"<<kvp->key<<endl;
-	  cout<<"kvp->value:"<<kvp->value<<endl;
-	  checkBuffer.length++;
-	}
+	// if(checkBuffer.length < 6 && rand()%2 == 0){
+	//   cout<<"kvp->key:"<<kvp->key<<endl;
+	//   cout<<"kvp->value:"<<kvp->value<<endl;
+	//   checkBuffer.length++;
+	// }
       }
     }
 
@@ -144,6 +144,10 @@ void process(kvBuffer *kvb){
   for(kviter = 0 ; kviter < kvb->length ; kviter++){
     kvp = &kvb->kvs[kviter];
     record_count++;
+    if(record_count % 10000 == 0){
+      fprintf(stderr,"\rrecord_count:%lu",record_count);
+      fflush(stderr);
+    }
     gettimeofday(&start_time,NULL);
     if(kvp->operation == 'R'){
       if(LOAD_FLAG){
@@ -240,7 +244,7 @@ void consume(){
       std::cout<<"read_count:"<<read_count<<std::endl;
       std::cout<<"record_count:"<<record_count<<std::endl;
       std::cout<<record_count*1.0/(sum_time*1.0/1000000)<<"op/s"<<endl;
-      std::cout<<(sum_time*1.0/100)/(record_count)<<"ms/op"<<endl;
+      std::cout<<(sum_time*1.0/1000)/(record_count)<<"ms/op"<<endl;
       std::cout<<"read_average_latency:"<<read_latency_sum*1.0/read_count<<"micros"<<endl;
       std::cout<<"write_average_latency:"<<write_latency_sum*1.0/(record_count - read_count)<<"micros"<<endl;
       //  int i;
@@ -250,7 +254,7 @@ void consume(){
 	    }*/
       gettimeofday(&ycsb_end_time,NULL);
       compute_diff(ycsb_end_time,ycsb_begin_time,diff);
-      std::cout<<"ycsb iops:"<<(diff*1.0/100)/(record_count)<<"ms/op"<<endl;
+      std::cout<<"ycsb iops:"<<(diff*1.0/1000)/(record_count)<<"ms/op"<<endl;
       std::string stat_str;
       db->GetProperty("leveldb.stats",&stat_str);
       std::cout<<stat_str<<std::endl;
@@ -302,19 +306,19 @@ void produce(){
 }
 
 
-// int main(int argc,char *argv[]){
-//   if(argc == 3){
-//     init(argv[1],NULL,argv[2]);
-//   }else{
-//     //filename,dbfilename,load_str
-//     init(argv[1],argv[2],argv[3]);
-//   }
-//   thread one(produce);
-//   thread two(consume);
-//   gettimeofday(&ycsb_begin_time,NULL);
-//   one.join();
-//   two.join();
-//   while(true)
-//     sleep(1);
-//   return 0;
-// }
+int main(int argc,char *argv[]){
+  if(argc == 3){
+    init(argv[1],NULL,argv[2]);
+  }else{
+    //filename,dbfilename,load_str
+    init(argv[1],argv[2],argv[3]);
+  }
+  thread one(produce);
+  thread two(consume);
+  gettimeofday(&ycsb_begin_time,NULL);
+  one.join();
+  two.join();
+  while(true)
+    sleep(1);
+  return 0;
+}
