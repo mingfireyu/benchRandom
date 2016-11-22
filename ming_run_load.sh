@@ -16,10 +16,10 @@ filename_run="$dir""$run_suffix"
 #echo "$filename_load"
 #echo "$filename_run"
 dbname=/home/ming/storage/adb
-./a.out "$filename_load" "$dbname" run > result_"$load_suffix"<<EOF
+time -p ./a.out "$filename_load" "$dbname" run > result_"$load_suffix"<<EOF
 $BLOOMBITS $COMPRESSION $TABLECACHESIZE
 EOF
-./a.out "$filename_run" "$dbname" run > result_"$run_suffix"<<EOF
+time -p ./a.out "$filename_run" "$dbname" run > result_"$run_suffix"<<EOF
 $BLOOMBITS $COMPRESSION $TABLECACHESIZE
 EOF
 newdir=bloom_"$BLOOMBITS"_compression_"$COMPRESSION"_tablecachesize_"$TABLECACHESIZE"
