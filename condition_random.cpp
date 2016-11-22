@@ -141,7 +141,9 @@ void process(kvBuffer *kvb){
   struct timeval end_time;
   //  struct timeval now_time;
   long long diff;
-
+  if(!record_count){
+    gettimeofday(&ycsb_begin_time,NULL);
+  }
   for(kviter = 0 ; kviter < kvb->length ; kviter++){
     kvp = &kvb->kvs[kviter];
     record_count++;
@@ -186,6 +188,9 @@ void process(kvBuffer *kvb){
 
 void init(char filename[],char dbfilename[],char load_str[]){
   int i;
+  int bloomBits;
+  unsigned long long tableCacheSize;
+  int compressionFlag;
   fp = fopen(filename,"r");
   error_count = 0;
   read_count=0;
@@ -200,8 +205,20 @@ void init(char filename[],char dbfilename[],char load_str[]){
     printf("error\n");
   }
   ops.create_if_missing = true;
-  ops.filter_policy = leveldb::NewBloomFilterPolicy(10);
-  //  ops.compression = leveldb::kNoCompression;   
+  fprintf(stderr,"please input bloom filter bits Compression?1(true) or 0(false) tableCache size\n");
+  scanf("%d %d %llu",&bloomBits,&compressionFlag,&tableCacheSize);
+  
+  ops.filter_policy = leveldb::NewBloomFilterPolicy(bloomBits);
+  if(!compressionFlag){
+    ops.compression = leveldb::kNoCompression;   
+  }
+  ops.max_open_files = tableCacheSize;
+
+  printf("environment:\n");
+  printf("bloomfilterbits\tCompression\ttableCacheSize\n");
+  printf("%15d\t%11s\t%14llu\n",bloomBits,compressionFlag?"true":"false",tableCacheSize);
+  printf("filename:%s\t dbfilename:%s\n",filename,dbfilename?"testdb":dbfilename);
+  
   if(load_str[0] == 'l' || load_str[0] == 'L'){
     LOAD_FLAG = true;
   }else{
@@ -256,7 +273,7 @@ void consume(){
 	    }*/
       gettimeofday(&ycsb_end_time,NULL);
       compute_diff(ycsb_end_time,ycsb_begin_time,diff);
-      std::cout<<"ycsb iops:"<<(diff*1.0/1000)/(record_count)<<"ms/op"<<endl;
+      std::cout<<"overall time:"<<diff<<"us"<<endl;
       std::string stat_str;
       db->GetProperty("leveldb.stats",&stat_str);
       std::cout<<stat_str<<std::endl;
@@ -317,7 +334,7 @@ int main(int argc,char *argv[]){
   }
   thread one(produce);
   thread two(consume);
-  gettimeofday(&ycsb_begin_time,NULL);
+
   one.join();
   two.join();
   while(true)
