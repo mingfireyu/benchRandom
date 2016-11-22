@@ -217,7 +217,7 @@ void init(char filename[],char dbfilename[],char load_str[]){
   printf("environment:\n");
   printf("bloomfilterbits\tCompression\ttableCacheSize\tlogOpen\n");
   printf("%15d\t%11s\t%14llu\t%7s\n",bloomBits,compressionFlag?"true":"false",tableCacheSize,ops.log_open?"true":"false");
-  printf("filename:%s\t dbfilename:%s\n",filename,dbfilename?"testdb":dbfilename);
+  printf("filename:%s\t dbfilename:%s\n",filename,dbfilename?dbfilename:"testdb");
   
   if(load_str[0] == 'l' || load_str[0] == 'L'){
     LOAD_FLAG = true;
