@@ -1,0 +1,40 @@
+environment:
+bloomfilterbits	Compression	tableCacheSize	
+             10	      false	          1000	
+filename:./workloadu_zipfian_run_50000_constant_hashed_1024.trace0	 dbfilename:/home/ming/storage/adb
+load data end!
+error_count:0
+read_count:0
+record_count:50000
+190826op/s
+0.00524038ms/op
+read_average_latency:-nanmicros
+write_average_latency:5.24038micros
+overall time:541770us
+
+** Compaction Stats [default] **
+Level    Files   Size(MB} Score Read(GB}  Rn(GB} Rnp1(GB} Write(GB} Wnew(GB} Moved(GB} W-Amp Rd(MB/s} Wr(MB/s} Comp(sec} Comp(cnt} Avg(sec} KeyIn KeyDrop
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+  L0      1/0       0.58   0.5      0.0     0.0      0.0       0.0      0.0       0.0   0.0      0.0     69.4         1         1    0.732       0      0
+  L1      1/0      50.81   0.1      0.0     0.0      0.0       0.0      0.0       0.0   0.0      0.0      0.0         0         0    0.000       0      0
+ Sum      2/0      51.39   0.0      0.0     0.0      0.0       0.0      0.0       0.0   1.0      0.0     69.4         1         1    0.732       0      0
+ Int      0/0       0.00   0.0      0.0     0.0      0.0       0.0      0.0       0.0   0.0      0.0      0.0         0         0    0.000       0      0
+Uptime(secs): 3.5 total, 3.5 interval
+Flush(GB): cumulative 0.050, interval 0.000
+AddFile(GB): cumulative 0.000, interval 0.000
+AddFile(Total Files): cumulative 0, interval 0
+AddFile(L0 Files): cumulative 0, interval 0
+AddFile(Keys): cumulative 0, interval 0
+Cumulative compaction: 0.05 GB write, 14.58 MB/s write, 0.00 GB read, 0.00 MB/s read, 0.7 seconds
+Interval compaction: 0.00 GB write, 0.00 MB/s write, 0.00 GB read, 0.00 MB/s read, 0.0 seconds
+Stalls(count): 0 level0_slowdown, 0 level0_slowdown_with_compaction, 0 level0_numfiles, 0 level0_numfiles_with_compaction, 0 stop for pending_compaction_bytes, 0 slowdown for pending_compaction_bytes, 0 memtable_compaction, 0 memtable_slowdown, interval 0 total count
+
+** DB Stats **
+Uptime(secs): 3.5 total, 0.5 interval
+Cumulative writes: 50K writes, 50K keys, 50K commit groups, 1.0 writes per commit group, ingest: 0.05 GB, 14.56 MB/s
+Cumulative WAL: 50K writes, 0 syncs, 50000.00 writes per sync, written: 0.05 GB, 14.56 MB/s
+Cumulative stall: 00:00:0.000 H:M:S, 0.0 percent
+Interval writes: 50K writes, 50K keys, 50K commit groups, 1.0 writes per commit group, ingest: 50.74 MB, 93.60 MB/s
+Interval WAL: 50K writes, 0 syncs, 50000.00 writes per sync, written: 0.05 MB, 93.60 MB/s
+Interval stall: 00:00:0.000 H:M:S, 0.0 percent
+
