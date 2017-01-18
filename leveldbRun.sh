@@ -1,5 +1,5 @@
 #!/bin/bash
-__runRocksdb(){
+__runLeveldb(){
 WORKLOAD=$1
 REQUESTDISTRIBUTION=$2
 RECORDCOUNT=$3
@@ -20,7 +20,7 @@ filename_load="$dir""$load_suffix"
 filename_run="$dir""$run_suffix"
 #echo "$filename_load"
 #echo "$filename_run"
-
+rm -rf "$dbname"
 size_before="$WORKLOAD"_"$REQUESTDISTRIBUTION"_"$DISKENV"_"$db_size"_"$WRITEBUFFERSIZE"_before
 size_after="$WORKLOAD"_"$REQUESTDISTRIBUTION"_"$DISKENV"_"$db_size"_"$WRITEBUFFERSIZE"_after
 iostat > "$size_before"
@@ -50,10 +50,10 @@ FIELDLENGTH=1024
 BLOOMBITS=10
 COMPRESSION=0
 TABLECACHESIZE=1000
-dir=../
+dir=./
 DISKENV=5disks
 dbname=~/storage/adb
 db_size=50MB
 WRITEBUFFERSIZE=4194304
-__runRocksdb "$WORKLOAD" "$REQUESTDISTRIBUTION" "$RECORDCOUNT" "$FIELDLENGTHDISTRIBUTION" \
+__runLeveldb "$WORKLOAD" "$REQUESTDISTRIBUTION" "$RECORDCOUNT" "$FIELDLENGTHDISTRIBUTION" \
 "$INSERTORDER" "$FIELDLENGTH" "$BLOOMBITS" "$COMPRESSION" "$TABLECACHESIZE" "$dir" "$DISKENV" "$dbname" "$db_size" "$WRITEBUFFERSIZE"
