@@ -191,6 +191,7 @@ void init(char filename[],char dbfilename[],char load_str[]){
   int bloomBits;
   unsigned long long tableCacheSize;
   int compressionFlag;
+  size_t writeBufferSize;
   fp = fopen(filename,"r");
   error_count = 0;
   read_count=0;
@@ -205,18 +206,18 @@ void init(char filename[],char dbfilename[],char load_str[]){
     printf("error\n");
   }
   ops.create_if_missing = true;
-  fprintf(stderr,"please input bloom filter bits Compression?1(true) or 0(false) tableCache size\n");
-  scanf("%d %d %llu",&bloomBits,&compressionFlag,&tableCacheSize);
+  fprintf(stderr,"please input bloom filter bits Compression?1(true) or 0(false) tableCache size write_buffer_size\n");
+  scanf("%d %d %llu %lu",&bloomBits,&compressionFlag,&tableCacheSize,&writeBufferSize);
   
   ops.filter_policy = leveldb::NewBloomFilterPolicy(bloomBits);
   if(!compressionFlag){
     ops.compression = leveldb::kNoCompression;   
   }
   ops.max_open_files = tableCacheSize;
-
+  ops.write_buffer_size = writeBufferSize;
   printf("environment:\n");
-  printf("bloomfilterbits\tCompression\ttableCacheSize\tlogOpen\n");
-  printf("%15d\t%11s\t%14llu\t%7s\n",bloomBits,compressionFlag?"true":"false",tableCacheSize,ops.log_open?"true":"false");
+  printf("bloomfilterbits\tCompression\ttableCacheSize\twriteBufferSize\n");
+  printf("%15d\t%11s\t%14llu\t%lu\n",bloomBits,compressionFlag?"true":"false",tableCacheSize,writeBufferSize);
   printf("filename:%s\t dbfilename:%s\n",filename,dbfilename?dbfilename:"testdb");
   
   if(load_str[0] == 'l' || load_str[0] == 'L'){

@@ -1,0 +1,1 @@
+g++ -Wall -std=c++11 -O2 -pthread bench_rocksdb.cc -lrocksdb -lsnappy -lbz2 -lz -lrt
