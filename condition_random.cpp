@@ -49,6 +49,7 @@ unsigned long error_count;
 unsigned long read_count;
 unsigned long record_count;
 unsigned long key_count;
+unsigned long load_count;
 bool LOAD_FLAG = true;
 RandomGenerator rdgen;
 
@@ -175,18 +176,19 @@ void process(kvBuffer *kvb){
     }      
     gettimeofday(&end_time,NULL);
     compute_diff(end_time,start_time,diff);
-    
-    sum_time = sum_time + diff;
-    if(kvp->operation == 'R'){
-      read_latency_sum += diff;
-    }else{
-      write_latency_sum += diff;
+    if(record_count > load_count){
+	sum_time = sum_time + diff;
+	if(kvp->operation == 'R'){
+	  read_latency_sum += diff;
+	}else{
+	  write_latency_sum += diff;
+	}
     }
   }
   
 }
 
-void init(char filename[],char dbfilename[],char load_str[]){
+void init(char filename[],char dbfilename[],char load_str[],char loadCountStr[]){
   int i;
   int bloomBits;
   unsigned long long tableCacheSize;
@@ -230,7 +232,7 @@ void init(char filename[],char dbfilename[],char load_str[]){
   }else{
     leveldb::Status status = leveldb::DB::Open(ops,dbfilename,&db);
   }
-
+  load_count = strtoul(loadCountStr,NULL,10);
   for(i = 1 ; i <= LIST_LENGTH ; i++){
     recycle_list.push_back(new kvBuffer());
   }
@@ -263,10 +265,10 @@ void consume(){
       std::cout<<"error_count:"<<error_count<<std::endl;
       std::cout<<"read_count:"<<read_count<<std::endl;
       std::cout<<"record_count:"<<record_count<<std::endl;
-      std::cout<<record_count*1.0/(sum_time*1.0/1000000)<<"op/s"<<endl;
-      std::cout<<(sum_time*1.0/1000)/(record_count)<<"ms/op"<<endl;
+      std::cout<<(record_count-load_count)*1.0/(sum_time*1.0/1000000)<<"op/s"<<endl;
+      std::cout<<(sum_time*1.0/1000)/(record_count-load_count)<<"ms/op"<<endl;
       std::cout<<"read_average_latency:"<<read_latency_sum*1.0/read_count<<"micros"<<endl;
-      std::cout<<"write_average_latency:"<<write_latency_sum*1.0/(record_count - read_count)<<"micros"<<endl;
+      std::cout<<"write_average_latency:"<<write_latency_sum*1.0/(record_count - read_count - load_count)<<"micros"<<endl;
       //  int i;
       // leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
       /*    for (it->SeekToFirst(),i=0; it->Valid() && i < 5; it->Next(),i++) {
@@ -328,10 +330,10 @@ void produce(){
 
 int main(int argc,char *argv[]){
   if(argc == 3){
-    init(argv[1],NULL,argv[2]);
+    init(argv[1],NULL,argv[2],argv[4]);
   }else{
     //filename,dbfilename,load_str
-    init(argv[1],argv[2],argv[3]);
+    init(argv[1],argv[2],argv[3],argv[4]);
   }
   thread one(produce);
   thread two(consume);
