@@ -16,7 +16,7 @@
 #include"slice.h"
 #include <leveldb/filter_policy.h>
 using namespace std;
-#define KVBUFFER_LENGTH 100
+#define KVBUFFER_LENGTH 1000
 #define LIST_LENGTH 5
 #define KEYLENGTH 24
 using std::mutex;
@@ -194,6 +194,7 @@ void init(char filename[],char dbfilename[],char load_str[],char loadCountStr[])
   unsigned long long tableCacheSize;
   int compressionFlag;
   size_t writeBufferSize;
+  int max_file_size;
   fp = fopen(filename,"r");
   error_count = 0;
   read_count=0;
@@ -208,8 +209,8 @@ void init(char filename[],char dbfilename[],char load_str[],char loadCountStr[])
     printf("error\n");
   }
   ops.create_if_missing = true;
-  fprintf(stderr,"please input bloom filter bits Compression?1(true) or 0(false) tableCache size write_buffer_size\n");
-  scanf("%d %d %llu %lu",&bloomBits,&compressionFlag,&tableCacheSize,&writeBufferSize);
+  fprintf(stderr,"please input bloom filter bits|Compression?1(true) or 0(false)|tableCache size|write_buffer_size|max_file_size\n");
+  scanf("%d %d %llu %lu %d",&bloomBits,&compressionFlag,&tableCacheSize,&writeBufferSize,&max_file_size);
   
   ops.filter_policy = leveldb::NewBloomFilterPolicy(bloomBits);
   if(!compressionFlag){
@@ -217,9 +218,10 @@ void init(char filename[],char dbfilename[],char load_str[],char loadCountStr[])
   }
   ops.max_open_files = tableCacheSize;
   ops.write_buffer_size = writeBufferSize;
+  ops.max_file_size = max_file_size;
   printf("environment:\n");
-  printf("bloomfilterbits\tCompression\ttableCacheSize\twriteBufferSize\n");
-  printf("%15d\t%11s\t%14llu\t%lu\n",bloomBits,compressionFlag?"true":"false",tableCacheSize,writeBufferSize);
+  printf("bloomfilterbits\tCompression\ttableCacheSize\twriteBufferSize\tmax_file_size\n");
+  printf("%15d\t%11s\t%14llu\t%lu\t%dMB\n",bloomBits,compressionFlag?"true":"false",tableCacheSize,writeBufferSize,max_file_size/1024/1024);
   printf("filename:%s\t dbfilename:%s\n",filename,dbfilename?dbfilename:"testdb");
   
   if(load_str[0] == 'l' || load_str[0] == 'L'){
